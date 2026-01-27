@@ -36,5 +36,5 @@ def generate_graph_data(num_edges=100, node_range=500):
         print(f"{src:<12.1f} | {dest:<12.1f} | {i}")
 
 if __name__ == "__main__":
-    # You can adjust the number of edges here
+    # adjust the number of edges here
     generate_graph_data(num_edges=75)

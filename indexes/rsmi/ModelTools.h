@@ -21,8 +21,42 @@
 #include <torch/types.h>
 #include <torch/utils.h>
 
-#include <xmmintrin.h> //SSE指令集需包含词头文件
-// #include <immintrin.h>
+// Platform-specific SIMD support
+#if defined(__x86_64__) || defined(_M_X64) || defined(__i386__) || defined(_M_IX86)
+    #define USE_SSE 1
+    #include <xmmintrin.h>
+#elif defined(__aarch64__) || defined(__arm__)
+    #define USE_NEON 1
+    #include <arm_neon.h>
+    // SSE to NEON compatibility layer
+    typedef float32x4_t __m128;
+    #define _mm_setzero_ps() vdupq_n_f32(0.0f)
+    #define _mm_set_ps(a, b, c, d) (float32x4_t){d, c, b, a}
+    #define _mm_load_ps(p) vld1q_f32(p)
+    #define _mm_mul_ps(a, b) vmulq_f32(a, b)
+    #define _mm_add_ps(a, b) vaddq_f32(a, b)
+    #define _mm_max_ps(a, b) vmaxq_f32(a, b)
+    // Replace _mm_malloc with aligned_alloc for ARM
+    inline void* _mm_malloc(size_t size, size_t align) {
+        void* ptr = nullptr;
+        posix_memalign(&ptr, align, size);
+        return ptr;
+    }
+    inline void _mm_free(void* ptr) {
+        free(ptr);
+    }
+#else
+    #define USE_SCALAR 1
+    // Fallback for other platforms
+    inline void* _mm_malloc(size_t size, size_t align) {
+        void* ptr = nullptr;
+        posix_memalign(&ptr, align, size);
+        return ptr;
+    }
+    inline void _mm_free(void* ptr) {
+        free(ptr);
+    }
+#endif
 
 #include "./Constants.h"
 #include "./Point.h"

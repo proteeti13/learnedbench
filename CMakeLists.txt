@@ -7,7 +7,7 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 
-set(CMAKE_CXX_FLAGS "-mbmi2 -O3 -DNDEBUG")
+set(CMAKE_CXX_FLAGS "-O3 -DNDEBUG")
 # set(CMAKE_CXX_FLAGS "-mbmi2 -Wall -Wextra")
 # set(CMAKE_CXX_FLAGS_DEBUG "-g")
 # set(CMAKE_CXX_FLAGS_RELEASE "-O3")
@@ -16,15 +16,29 @@ option(PROFILE "whether starting heap profile" OFF)
 option(RSMI "whether building RSMI" OFF)
 
 
-set(BOOST_ROOT "/home/qiyu/boost_1_79_0")
-set(Boost_INCLUDE_DIR "/home/qiyu/boost_1_79_0")
-set(Boost_LIBRARY_DIR "/home/qiyu/boost_1_79_0/stage/lib")
+set(BOOST_ROOT "/opt/homebrew/opt/boost")
+set(Boost_INCLUDE_DIR "/opt/homebrew/opt/boost/include")
+set(Boost_LIBRARY_DIR "/opt/homebrew/opt/boost/lib")
 
-SET(EXECUTABLE_OUTPUT_PATH "/home/qiyu/learnedbench/build/bin")
+SET(EXECUTABLE_OUTPUT_PATH "${CMAKE_BINARY_DIR}/bin")
 
 # check dependencies
-find_package(TPIE REQUIRED)
-find_package(Boost 1.79.0 REQUIRED COMPONENTS program_options system filesystem)
+set(TPIE_FOUND TRUE)
+# Use TPIE from your local build - headers AND library from same source for consistency
+set(TPIE_SOURCE_DIR "/Users/proteetiprovarawshan/tpie")
+set(TPIE_BUILD_DIR "/Users/proteetiprovarawshan/tpie/build")
+set(TPIE_LIBRARIES "${TPIE_BUILD_DIR}/tpie/libtpie.a")
+set(TPIE_INCLUDE_DIRS "${TPIE_SOURCE_DIR}" "${TPIE_BUILD_DIR}")
+# Fallback to /usr/local/lib if build folder library doesn't exist
+if(NOT EXISTS ${TPIE_LIBRARIES})
+  set(TPIE_LIBRARIES "/usr/local/lib/libtpie.a")
+  message(STATUS "Using TPIE library from /usr/local/lib (fallback)")
+else()
+  message(STATUS "Using TPIE library from build folder: ${TPIE_LIBRARIES}")
+endif()
+include_directories(${TPIE_INCLUDE_DIRS})
+#find_package(Boost 1.79.0 REQUIRED COMPONENTS program_options system filesystem)
+find_package(Boost REQUIRED COMPONENTS program_options)
 find_package(GEOS REQUIRED)
 
 if(PROFILE)
@@ -33,26 +47,46 @@ if(PROFILE)
 endif()
 
 if(RSMI)
-  # the RSMI benchmark needs to be compiled using cxx14
-  # the dependency libtorch can be downloaded from 
-  set(CMAKE_CXX_STANDARD 14)
+  # Use C++17 for std::filesystem support (RSMI originally needed C++14 but torch supports C++17)
+  set(CMAKE_CXX_STANDARD 17)
   set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-  set(TORCH_PATH "/home/qiyu/libtorch")
-  list(APPEND CMAKE_PREFIX_PATH TORCH_PATH)
+  set(TORCH_PATH "/opt/homebrew/opt/pytorch")
+  list(APPEND CMAKE_PREFIX_PATH ${TORCH_PATH})
   find_package(Torch REQUIRED PATHS ${TORCH_PATH} CONFIG)
 
-  # RSMI library path
-  set(RSMI_PATH "/home/qiyu/learnedbench/indexes/rsmi")
+  # RSMI library path updated for your local directory
+  set(RSMI_PATH "${CMAKE_SOURCE_DIR}/indexes/rsmi")
 
   include_directories(${Boost_INCLUDE_DIR} ${TPIE_INCLUDE_DIRS} ${RSMI_PATH})
 
   if(PROFILE)
     add_executable(bench_rsmi_hp bench/bench_rsmi.cpp)
-    target_link_libraries(bench_rsmi_hp ${TPIE_LIBRARIES} ${TORCH_LIBRARIES} Boost::system Boost::filesystem pthread "${RSMI_PATH}/build/librsmi.a" -ltcmalloc)
+    target_include_directories(bench_rsmi_hp PUBLIC "/usr/local/include" ${RSMI_PATH} ${Boost_INCLUDE_DIR})
+    target_link_libraries(bench_rsmi_hp "/usr/local/lib/libtpie.a" ${TORCH_LIBRARIES} pthread "${RSMI_PATH}/build/librsmi.a" -ltcmalloc)
   else()
+    # 1. CREATE the target
     add_executable(bench_rsmi bench/bench_rsmi.cpp)
-    target_link_libraries(bench_rsmi ${TPIE_LIBRARIES} ${TORCH_LIBRARIES} Boost::system Boost::filesystem pthread "${RSMI_PATH}/build/librsmi.a")
+
+    # 2. CONFIGURE the target (Absolute paths to bypass variable errors)
+    target_include_directories(bench_rsmi PUBLIC
+            "/Users/proteetiprovarawshan/tpie"
+            "/Users/proteetiprovarawshan/tpie/build"
+            "${RSMI_PATH}"
+            "/opt/homebrew/opt/boost/include"
+    )
+
+    # 3. LINK the target (Explicitly use the library path we verified)
+    # Note: TPIE was built with snappy compression support, so we need to link it
+    # Note: Using C++17 std::filesystem since Boost filesystem not available
+    target_link_libraries(bench_rsmi
+            ${TPIE_LIBRARIES}
+            ${TORCH_LIBRARIES}
+            pthread
+            "${RSMI_PATH}/build/librsmi.a"
+            "-L/opt/homebrew/lib"
+            "-lsnappy"
+    )
   endif()
 
 else()
@@ -61,7 +95,7 @@ else()
   set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
   # ANN library path
-  set(ANN_PATH "/home/qiyu/learnedbench/indexes/ann_1.1.2")
+  set(ANN_PATH "${CMAKE_SOURCE_DIR}/learnedbench/indexes/ann_1.1.2")
 
   include_directories(${Boost_INCLUDE_DIR} ${TPIE_INCLUDE_DIRS} ${RSMI_PATH} ${ANN_PATH})
 
@@ -192,3 +226,21 @@ else()
   endif()
 endif()
 
+# --- Data Converter Tool ---
+# --- Data Converter Tool ---
+add_executable(convert_data convert_data.cpp)
+
+# 1. Tell Linker to look in Homebrew's folder
+if(APPLE)
+  target_link_directories(convert_data PRIVATE "/opt/homebrew/lib")
+endif()
+
+# 2. Link the libraries
+target_link_libraries(convert_data
+        ${TPIE_LIBRARIES}
+        "snappy"      # CMake will now find this in /opt/homebrew/lib
+        "pthread"
+)
+
+# 3. Include headers
+target_include_directories(convert_data PRIVATE ${TPIE_INCLUDE_DIRS})

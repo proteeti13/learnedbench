@@ -6,9 +6,7 @@
 
 #include "../indexes/nonlearned/fullscan.hpp"
 
-#include <boost/filesystem.hpp>
-#include <boost/filesystem/path.hpp>
-#include <boost/filesystem/operations.hpp>
+#include <filesystem>
 
 #define BENCH_DIM 2
 
@@ -16,7 +14,7 @@ using Point = point_t<BENCH_DIM>;
 using Box = box_t<BENCH_DIM>;
 using Points = std::vector<point_t<BENCH_DIM>>;
 
-const std::string MODEL_PATH = "/home/qiyu/learnedbench/model_path/";
+const std::string MODEL_PATH = "./";
 
 // extract filename from a path
 std::string get_filename(const std::string& path) {
@@ -44,8 +42,8 @@ int main(int argc, char **argv) {
     model_path.push_back('/');
 
     
-    if (! boost::filesystem::is_directory(model_path)) {
-        boost::filesystem::create_directory(model_path);
+    if (! std::filesystem::is_directory(model_path)) {
+        std::filesystem::create_directory(model_path);
     }
     
     std::cout << "Will save/load model to/from " << model_path << std::endl;

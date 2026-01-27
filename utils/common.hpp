@@ -3,7 +3,9 @@
 #include "type.hpp"
 #include "datautils.hpp"
 #include <array>
+#ifdef __linux__
 #include <bits/types/struct_rusage.h>
+#endif
 #include <boost/geometry/algorithms/detail/distance/interface.hpp>
 #include <boost/geometry/geometries/box.hpp>
 #include <cassert>

@@ -60,6 +60,9 @@ ZMIndex(Points& points) : _data(points) {
     }
     
     pgm_idx = new Index(tuples.begin(), tuples.end());
+#ifdef ZMI_STATS
+    pgm_idx->enable_stats(true);
+#endif
 
     auto end = std::chrono::steady_clock::now();
     build_time = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
@@ -143,6 +146,20 @@ inline size_t get_resolution() {
     return this->resolution;
 }
 
+#ifdef ZMI_STATS
+void reset_query_stats() {
+    pgm_idx->reset_stats();
+}
+
+void print_range_stats() const {
+    print_stats("RangeStats", pgm_idx->get_stats().range);
+}
+
+void print_knn_stats() const {
+    print_stats("KnnStats", pgm_idx->get_stats().knn);
+}
+#endif
+
 private:
 // the grid resolution to compute the z address
 // by default, it is set to N^{1/d}
@@ -183,6 +200,17 @@ constexpr auto get_array_from_tuple(tuple_t&& tuple) {
     constexpr auto get_array = [](auto&& ... x){ return std::array{std::forward<decltype(x)>(x) ... }; };
     return std::apply(get_array, std::forward<tuple_t>(tuple));
 }
+
+#ifdef ZMI_STATS
+inline void print_stats(const char* label, const typename Index::QueryStats &qs) const {
+    std::cout << label << ":" << std::endl;
+    double avg_err = qs.count ? (qs.sum_pred_error * 1.0 / qs.count) : 0.0;
+    double avg_steps = qs.count ? (qs.sum_corr_steps * 1.0 / qs.count) : 0.0;
+    std::cout << "PredError(avg)=" << avg_err << ", PredError(max)=" << qs.max_pred_error << std::endl;
+    std::cout << "CorrSteps(avg)=" << avg_steps << ", CorrSteps(max)=" << qs.max_corr_steps << std::endl;
+    std::cout << "FallbackRate=N/A (no explicit fallback path)" << std::endl;
+}
+#endif
 
 };
 

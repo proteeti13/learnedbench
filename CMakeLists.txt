@@ -95,7 +95,7 @@ else()
   set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
   # ANN library path
-  set(ANN_PATH "${CMAKE_SOURCE_DIR}/learnedbench/indexes/ann_1.1.2")
+  set(ANN_PATH "${CMAKE_SOURCE_DIR}/indexes/ann_1.1.2")
 
   include_directories(${Boost_INCLUDE_DIR} ${TPIE_INCLUDE_DIRS} ${RSMI_PATH} ${ANN_PATH})
 
@@ -217,12 +217,33 @@ else()
     add_executable(bench2d_default bench/bench.cpp)
     target_link_libraries(bench2d_default ${TPIE_LIBRARIES} Boost::program_options GEOS::geos pthread "${ANN_PATH}/lib/libANN.a")
     target_compile_definitions(bench2d_default PUBLIC PARTITION_NUM=100)
+    target_compile_options(bench2d_default PUBLIC -mbmi2)
 
     add_executable(bench3d_toronto bench/bench.cpp)
     target_link_libraries(bench3d_toronto ${TPIE_LIBRARIES} Boost::program_options GEOS::geos pthread "${ANN_PATH}/lib/libANN.a")
-    target_compile_definitions(bench3d_toronto PUBLIC BENCH_DIM=3 PARTITION_NUM=20)
+    target_compile_definitions(bench3d_toronto PUBLIC BENCH_DIM=3 PARTITION_NUM=20 ZMI_STATS=1)
+    target_compile_options(bench3d_toronto PUBLIC -mbmi2)
 
-    
+    # --- RSMI3D: 3D learned index without libtorch ---
+    # Data generator: raw doubles -> TPIE converter
+    add_executable(raw_to_tpie tools/datasets/true_3d_learned_index/raw_to_tpie.cpp)
+    target_link_libraries(raw_to_tpie ${TPIE_LIBRARIES} pthread)
+    target_include_directories(raw_to_tpie PRIVATE ${TPIE_INCLUDE_DIRS})
+
+    # RSMI3D benchmark (point-lookup, ZMI-comparable metrics)
+    add_executable(bench_rsmi3d bench/bench_rsmi3d.cpp)
+    target_link_libraries(bench_rsmi3d ${TPIE_LIBRARIES} pthread)
+    target_include_directories(bench_rsmi3d PRIVATE ${TPIE_INCLUDE_DIRS})
+    target_compile_definitions(bench_rsmi3d PUBLIC RSMI3D_EPSILON=64)
+    target_compile_options(bench_rsmi3d PUBLIC -mbmi2)
+
+    # RSMI3D true-3D benchmark (dense + sparse, 100K queries, extended metrics)
+    add_executable(bench_rsmi3d_true3d bench/bench_rsmi3d_true3d.cpp)
+    target_link_libraries(bench_rsmi3d_true3d ${TPIE_LIBRARIES} pthread)
+    target_include_directories(bench_rsmi3d_true3d PRIVATE ${TPIE_INCLUDE_DIRS})
+    target_compile_definitions(bench_rsmi3d_true3d PUBLIC RSMI3D_EPSILON=64)
+    target_compile_options(bench_rsmi3d_true3d PUBLIC -mbmi2)
+
   endif()
 endif()
 

@@ -289,16 +289,38 @@ int main(int argc, char **argv) {
     if (index.compare("zm") == 0) {
         assert(idx_set.zm != nullptr);
         if (mode.compare("range") == 0) {
+#ifdef ZMI_STATS
+            idx_set.zm->reset_query_stats();
+#endif
             bench::query::batch_range_queries(*(idx_set.zm), range_queries);
+#ifdef ZMI_STATS
+            idx_set.zm->print_range_stats();
+#endif
             return 0;
         }
         if (mode.compare("knn") == 0) {
+#ifdef ZMI_STATS
+            idx_set.zm->reset_query_stats();
+#endif
             bench::query::batch_knn_queries(*(idx_set.zm), knn_queries);
+#ifdef ZMI_STATS
+            idx_set.zm->print_knn_stats();
+#endif
             return 0;
         }
         if (mode.compare("all") == 0) {
+#ifdef ZMI_STATS
+            idx_set.zm->reset_query_stats();
+#endif
             bench::query::batch_range_queries(*(idx_set.zm), range_queries);
+#ifdef ZMI_STATS
+            idx_set.zm->print_range_stats();
+            idx_set.zm->reset_query_stats();
+#endif
             bench::query::batch_knn_queries(*(idx_set.zm), knn_queries);
+#ifdef ZMI_STATS
+            idx_set.zm->print_knn_stats();
+#endif
             return 0;
         }
     }

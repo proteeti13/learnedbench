@@ -1,0 +1,114 @@
+{
+  "common": {
+    "checks": {
+      "row_count_eq_n": true,
+      "no_duplicate_keys": true,
+      "strict_lexicographic_sorted": true,
+      "offset_equals_row_index": true
+    },
+    "distinct_counts": {
+      "SourceID": 2000,
+      "Hop1_ID": 2000,
+      "Hop2_ID": 2000
+    }
+  },
+  "count": 100000,
+  "min": {
+    "SourceID": 0,
+    "Hop1_ID": 0,
+    "Hop2_ID": 0,
+    "Offset": 0
+  },
+  "max": {
+    "SourceID": 1999,
+    "Hop1_ID": 1999,
+    "Hop2_ID": 1999,
+    "Offset": 99999
+  },
+  "head": [
+    [
+      0,
+      0,
+      680,
+      0
+    ],
+    [
+      0,
+      80,
+      40,
+      1
+    ],
+    [
+      0,
+      80,
+      207,
+      2
+    ],
+    [
+      0,
+      99,
+      1914,
+      3
+    ],
+    [
+      0,
+      133,
+      866,
+      4
+    ]
+  ],
+  "tail": [
+    [
+      1999,
+      1758,
+      1527,
+      99995
+    ],
+    [
+      1999,
+      1838,
+      1965,
+      99996
+    ],
+    [
+      1999,
+      1886,
+      668,
+      99997
+    ],
+    [
+      1999,
+      1957,
+      225,
+      99998
+    ],
+    [
+      1999,
+      1968,
+      301,
+      99999
+    ]
+  ],
+  "sparse": {
+    "universe": {
+      "SourceID": 2000,
+      "Hop1_ID": 2000,
+      "Hop2_ID": 2000
+    },
+    "universe_size": 8000000000,
+    "coverage_universe": 1.25e-05,
+    "coverage_universe_threshold": 1e-06,
+    "distinct_counts": {
+      "SourceID": 2000,
+      "Hop1_ID": 2000,
+      "Hop2_ID": 2000
+    },
+    "observed_grid": 8000000000,
+    "observed_grid_ratio": 80000.0,
+    "observed_grid_ratio_threshold": 5.0,
+    "checks": {
+      "coverage_universe_very_small": false,
+      "not_full_grid_observed_grid_much_larger_than_n": true
+    }
+  }
+}

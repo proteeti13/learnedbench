@@ -1,0 +1,111 @@
+{
+  "common": {
+    "checks": {
+      "row_count_eq_n": true,
+      "no_duplicate_keys": true,
+      "strict_lexicographic_sorted": true,
+      "offset_equals_row_index": true
+    },
+    "distinct_counts": {
+      "SourceID": 20,
+      "Hop1_ID": 25,
+      "Hop2_ID": 20
+    }
+  },
+  "count": 10000,
+  "min": {
+    "SourceID": 0,
+    "Hop1_ID": 0,
+    "Hop2_ID": 0,
+    "Offset": 0
+  },
+  "max": {
+    "SourceID": 19,
+    "Hop1_ID": 24,
+    "Hop2_ID": 19,
+    "Offset": 9999
+  },
+  "head": [
+    [
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      1,
+      1
+    ],
+    [
+      0,
+      0,
+      2,
+      2
+    ],
+    [
+      0,
+      0,
+      3,
+      3
+    ],
+    [
+      0,
+      0,
+      4,
+      4
+    ]
+  ],
+  "tail": [
+    [
+      19,
+      24,
+      15,
+      9995
+    ],
+    [
+      19,
+      24,
+      16,
+      9996
+    ],
+    [
+      19,
+      24,
+      17,
+      9997
+    ],
+    [
+      19,
+      24,
+      18,
+      9998
+    ],
+    [
+      19,
+      24,
+      19,
+      9999
+    ]
+  ],
+  "dense": {
+    "dims_requested": {
+      "SourceID": 20,
+      "Hop1_ID": 25,
+      "Hop2_ID": 20
+    },
+    "distinct_counts": {
+      "SourceID": 20,
+      "Hop1_ID": 25,
+      "Hop2_ID": 20
+    },
+    "observed_grid": 10000,
+    "coverage_ratio": 1.0,
+    "checks": {
+      "full_grid_distinct_product_eq_n": true,
+      "coverage_ratio_eq_1": true,
+      "every_combination_exists": true
+    }
+  }
+}

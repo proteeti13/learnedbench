@@ -1,0 +1,3 @@
+[submodule "indexes/mortonnd"]
+	path = indexes/mortonnd
+	url = https://github.com/kevinhartman/morton-nd

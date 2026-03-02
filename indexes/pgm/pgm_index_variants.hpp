@@ -895,6 +895,26 @@ public:
     using size_type = size_t;
     using value_type = decltype(morton::Decode(0));
 
+#ifdef ZMI_STATS
+    struct QueryStats {
+        uint64_t count = 0;
+        uint64_t sum_pred_error = 0;
+        uint64_t max_pred_error = 0;
+        uint64_t sum_corr_steps = 0;
+        uint64_t max_corr_steps = 0;
+        uint64_t fallback_count = 0;
+    };
+
+    struct Stats {
+        QueryStats range;
+        QueryStats knn;
+    };
+
+    void enable_stats(bool enable) { stats_enabled = enable; }
+    void reset_stats() { stats = Stats{}; }
+    const Stats &get_stats() const { return stats; }
+#endif
+
     /**
      * Constructs an empty multidimensional container.
      */
@@ -934,7 +954,15 @@ public:
     bool contains(const value_type &p) {
         auto zp = encode(p);
         auto range = pgm.search(zp);
+#ifdef ZMI_STATS
+        size_t steps = 0;
+        auto it = lower_bound_count(data.begin() + range.lo, data.begin() + range.hi, zp, steps);
+        if (stats_enabled) {
+            record_stats(stats.knn, range.pos, static_cast<size_t>(std::distance(data.begin(), it)), steps);
+        }
+#else
         auto it = std::lower_bound(data.begin() + range.lo, data.begin() + range.hi, zp);
+#endif
         return it != data.end() || morton::Decode(*it) == p;
     }
 
@@ -1015,7 +1043,15 @@ public:
         // get 2k points around zp to make temporary answer
         auto zp = encode(p);
         auto range = pgm.search(zp);
+#ifdef ZMI_STATS
+        size_t steps = 0;
+        auto it = lower_bound_count(data.begin() + range.lo, data.begin() + range.hi, zp, steps);
+        if (stats_enabled) {
+            record_stats(stats.knn, range.pos, static_cast<size_t>(std::distance(data.begin(), it)), steps);
+        }
+#else
         auto it = std::lower_bound(data.begin() + range.lo, data.begin() + range.hi, zp);
+#endif
 
         std::vector<value_type> tmp_ans;
         for (auto i = it - k >= data.begin() ? it - k : data.begin(); i != it + k && i != data.end(); ++i)
@@ -1047,6 +1083,39 @@ public:
     }
 
 private:
+#ifdef ZMI_STATS
+    static void record_stats(QueryStats &qs, size_t pred_pos, size_t true_pos, size_t corr_steps) {
+        qs.count++;
+        uint64_t err = pred_pos > true_pos ? (pred_pos - true_pos) : (true_pos - pred_pos);
+        qs.sum_pred_error += err;
+        if (err > qs.max_pred_error) {
+            qs.max_pred_error = err;
+        }
+        qs.sum_corr_steps += corr_steps;
+        if (corr_steps > qs.max_corr_steps) {
+            qs.max_corr_steps = corr_steps;
+        }
+    }
+
+    template<typename Iter, typename Val>
+    static Iter lower_bound_count(Iter first, Iter last, const Val &value, size_t &steps) {
+        steps = 0;
+        auto count = std::distance(first, last);
+        while (count > 0) {
+            ++steps;
+            auto it = first;
+            auto step = count / 2;
+            std::advance(it, step);
+            if (*it < value) {
+                first = ++it;
+                count -= step + 1;
+            } else {
+                count = step;
+            }
+        }
+        return first;
+    }
+#endif
 
     class RangeIterator {
         using multidimensional_pgm_type = MultidimensionalPGMIndex<Dimensions, T, Epsilon, EpsilonRecursive, Floating>;
@@ -1112,7 +1181,15 @@ private:
                 throw std::invalid_argument("min > max");
 
             auto range = super->pgm.search(zmin);
+#ifdef ZMI_STATS
+            size_t steps = 0;
+            this->it = lower_bound_count(super->data.begin() + range.lo, super->data.begin() + range.hi, zmin, steps);
+            if (super->stats_enabled) {
+                record_stats(super->stats.range, range.pos, static_cast<size_t>(std::distance(super->data.begin(), this->it)), steps);
+            }
+#else
             this->it = std::lower_bound(super->data.begin() + range.lo, super->data.begin() + range.hi, zmin);
+#endif
             if (this->it == super->data.end())
                 return;
 
@@ -1139,6 +1216,11 @@ private:
         bool operator==(const iterator &rhs) const { return it == rhs.it; }
         bool operator!=(const iterator &rhs) const { return it != rhs.it; }
     };
+
+#ifdef ZMI_STATS
+    mutable Stats stats;
+    bool stats_enabled = false;
+#endif
 
     template<typename Head, typename... Tail>
     constexpr static T encode(const std::tuple<Head, Tail...> &t) {

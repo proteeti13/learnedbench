@@ -222,6 +222,10 @@ else()
     target_link_libraries(bench3d_toronto ${TPIE_LIBRARIES} Boost::program_options GEOS::geos pthread "${ANN_PATH}/lib/libANN.a")
     target_compile_definitions(bench3d_toronto PUBLIC BENCH_DIM=3 PARTITION_NUM=20)
 
+    add_executable(bench_flood_wiki bench/bench_flood_wiki.cpp)
+    target_link_libraries(bench_flood_wiki ${TPIE_LIBRARIES} Boost::program_options GEOS::geos pthread "${ANN_PATH}/lib/libANN.a")
+    target_compile_options(bench_flood_wiki PRIVATE -mbmi2)
+
     
   endif()
 endif()

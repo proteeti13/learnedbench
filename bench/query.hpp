@@ -4,6 +4,8 @@
 #include <random>
 #include <map>
 #include <algorithm>
+#include <numeric>
+#include <iomanip>
 
 #include "../utils/type.hpp"
 #include "../indexes/nonlearned/fullscan.hpp"
@@ -125,15 +127,52 @@ static void batch_range_queries(Index& index, std::vector<std::pair<box_t<Dim>, 
     // pair (range_cnt, time)
     std::vector<std::pair<size_t, long>> range_time;
     range_time.reserve(range_queries.size());
-    
+
+    // collect per-query latencies for standardized metrics
+    std::vector<long> all_latencies;
+    all_latencies.reserve(range_queries.size());
+
     for (auto& box : range_queries) {
         index.range_query(box.first);
-        range_time.emplace_back(box.second, index.get_range_time());
+        long t = index.get_range_time();
+        range_time.emplace_back(box.second, t);
+        all_latencies.emplace_back(t);
         index.reset_timer();
     }
 
+    // -- Standardized performance metrics --
+    size_t total_q = all_latencies.size();
+    double sum_us = 0.0;
+    for (auto t : all_latencies) sum_us += t;
+    double mean_us = (total_q > 0) ? sum_us / total_q : 0.0;
+
+    std::vector<long> sorted_lat = all_latencies;
+    std::sort(sorted_lat.begin(), sorted_lat.end());
+    size_t p95_idx = (size_t)(0.95 * total_q);
+    if (p95_idx >= total_q) p95_idx = total_q - 1;
+    double p95_us = (total_q > 0) ? (double)sorted_lat[p95_idx] : 0.0;
+
+    double total_s = sum_us / 1e6;
+    double throughput = (total_s > 0) ? total_q / total_s : 0.0;
+
+    double build_s  = index.get_build_time() / 1000.0;
+    double index_mb = index.index_size() / 1e6;
+
+    std::cout << "-------------------------------------------------------" << std::endl;
+    std::cout << "Performance Summary" << std::endl;
+    std::cout << "-------------------------------------------------------" << std::endl;
+    std::cout << std::fixed << std::setprecision(4);
+    std::cout << "Build Time (s):           " << build_s   << std::endl;
+    std::cout << "Index Size (MB):          " << index_mb  << std::endl;
+    std::cout << std::endl;
+    std::cout << "Mean Query Latency (us):  " << mean_us   << std::endl;
+    std::cout << "P95 Query Latency (us):   " << p95_us    << std::endl;
+    std::cout << std::defaultfloat;
+    std::cout << "Query Throughput (q/s):   " << (long long)throughput << std::endl;
+    std::cout << "-------------------------------------------------------" << std::endl;
+
     // sort by range_cnt
-    std::sort(range_time.begin(), range_time.end(), 
+    std::sort(range_time.begin(), range_time.end(),
         [](auto p1, auto p2) {
             return p1.first < p2.first;
         });

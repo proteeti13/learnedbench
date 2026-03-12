@@ -48,6 +48,11 @@ inline double get_avg_knn_time() {
     return (knn_time * 1.0) / knn_count;
 }
 
+// default: subclasses may override
+virtual size_t index_size() {
+    return 0;
+}
+
 // reset query timers
 // no need to reset build_time
 inline void reset_timer() {

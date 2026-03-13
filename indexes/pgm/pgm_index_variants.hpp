@@ -939,6 +939,20 @@ public:
     }
 
     /**
+     * Point lookup with correctness and refinement-window metrics.
+     * Returns {found, pgm_window} where pgm_window = range.hi - range.lo
+     * (the binary-search window guaranteed by the PGM error bound).
+     * This is the method used by bench_zmindex_wv for thesis benchmarking.
+     */
+    std::pair<bool, size_t> point_query(const value_type &p) {
+        auto zp = encode(p);
+        auto range = pgm.search(zp);
+        auto it = std::lower_bound(data.begin() + range.lo, data.begin() + range.hi, zp);
+        bool found = (it != data.end() && *it == zp);
+        return {found, range.hi - range.lo};
+    }
+
+    /**
      * Returns an iterator to the first element of the container.
      * @return an iterator to the first element of the container
      */

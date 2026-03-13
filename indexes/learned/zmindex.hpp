@@ -71,6 +71,26 @@ ZMIndex(Points& points) : _data(points) {
     delete this->pgm_idx;
 }
 
+// Result type for thesis-style point lookup.
+// found      – true if the Morton code is in the PGM index (exact match)
+// pgm_window – PGM search range size (≈ 2*Epsilon+2), the refinement window
+struct PointQueryResult {
+    bool   found;
+    size_t pgm_window;
+};
+
+// Exact point lookup (used by bench_zmindex_wv).
+// 3D key → grid cell IDs → Morton code → PGM search → binary-search [lo,hi).
+PointQueryResult point_lookup(Point& q) {
+    auto start = std::chrono::steady_clock::now();
+    auto q_tup = a2t(q);
+    auto [found, window] = pgm_idx->point_query(q_tup);
+    auto end = std::chrono::steady_clock::now();
+    point_time += std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+    point_count++;
+    return {found, window};
+}
+
 Points range_query(Box& box) {
     auto start = std::chrono::steady_clock::now();
 

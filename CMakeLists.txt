@@ -94,8 +94,8 @@ else()
   set(CMAKE_CXX_STANDARD 17)
   set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-  # ANN library path
-  set(ANN_PATH "${CMAKE_SOURCE_DIR}/learnedbench/indexes/ann_1.1.2")
+  # ANN library path (fixed: was erroneously prefixed with "learnedbench/")
+  set(ANN_PATH "${CMAKE_SOURCE_DIR}/indexes/ann_1.1.2")
 
   include_directories(${Boost_INCLUDE_DIR} ${TPIE_INCLUDE_DIRS} ${RSMI_PATH} ${ANN_PATH})
 
@@ -222,7 +222,16 @@ else()
     target_link_libraries(bench3d_toronto ${TPIE_LIBRARIES} Boost::program_options GEOS::geos pthread "${ANN_PATH}/lib/libANN.a")
     target_compile_definitions(bench3d_toronto PUBLIC BENCH_DIM=3 PARTITION_NUM=20)
 
-    
+    # ── ZM-Index point-lookup benchmark on Wiki-Vote dataset ──────────────────
+    # Thesis: flattened-1D baseline (Morton curve) vs. true-3D learned indexes.
+    # Does NOT depend on ANN or GEOS — only TPIE + Boost headers + pthread.
+    add_executable(bench_zmindex_wv bench/bench_zmindex_wv.cpp)
+    target_link_libraries(bench_zmindex_wv
+        ${TPIE_LIBRARIES}
+        pthread)
+    target_compile_options(bench_zmindex_wv PRIVATE -mbmi2)
+    target_compile_definitions(bench_zmindex_wv PRIVATE BENCH_DIM=3)
+
   endif()
 endif()
 

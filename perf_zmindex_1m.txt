@@ -1,0 +1,22 @@
+
+ Performance counter stats for 'build/bin/bench_zmindex_all /home/proteeti/RSMI/datasets/wiki_vote_triples.txt 1000000 wiki_vote SNAP real_graph_directed voting_network 4542805 --queries 100000 --seed 42':
+
+     5.638.369.863      instructions:u                   #    2,41  insn per cycle              (40,80%)
+     2.338.982.586      cycles:u                                                                (41,33%)
+     1.159.899.267      branches:u                                                              (41,87%)
+         7.378.834      branch-misses:u                  #    0,64% of all branches             (42,41%)
+     1.509.485.517      L1-dcache-loads:u                                                       (42,95%)
+         4.809.477      L1-dcache-load-misses:u          #    0,32% of all L1-dcache accesses   (34,47%)
+           413.078      LLC-loads:u                                                             (33,91%)
+            38.424      LLC-load-misses:u                #    9,30% of all LL-cache accesses    (33,37%)
+         2.851.926      cache-references:u                                                      (32,83%)
+         1.084.880      cache-misses:u                   #   38,04% of all cache refs           (32,27%)
+     1.646.787.425      dTLB-loads:u                                                            (32,29%)
+           259.545      dTLB-load-misses:u               #    0,02% of all dTLB cache accesses  (32,29%)
+
+       0,743822208 seconds time elapsed
+
+       0,703736000 seconds user
+       0,039985000 seconds sys
+
+

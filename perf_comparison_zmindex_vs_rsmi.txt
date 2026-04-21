@@ -1,0 +1,82 @@
+================================================================
+Hardware Performance Counter Comparison: ZM-Index vs RSMI
+Dataset: Wiki-Vote | Point Lookups | Seed: 42
+================================================================
+
+Run details:
+  ZM-Index 1M : 1M data points, 100K queries   — build 0.09s,  queries ~0.02s,  wall 0.74s
+  RSMI 100K   : 100K data points, 100K queries  — build 49.4s,  queries ~0.15s,  wall 53.3s
+  RSMI 1M     : 1M data points, 1M queries      — build 1170s,  queries ~2.4s,   wall 1174s
+
+NOTE: perf counters cover the full program (data load + build + queries).
+  Build time dominates both RSMI runs. Per-query estimates at bottom are
+  computed as total_counter / query_count and are upper bounds.
+
+----------------------------------------------------------------
+Raw Counters               | ZM-Index (1M) | RSMI (100K)       | RSMI (1M)
+---------------------------|---------------|-------------------|--------------------
+Instructions               | 5,638,369,863 | 330,742,474,155   | 5,587,119,627,304
+Cycles                     | 2,338,982,586 | 719,734,777,268   | 21,968,896,859,948
+IPC (insn/cycle)           | 2.41          | 0.46              | 0.25
+Branches                   | 1,159,899,267 | 61,748,202,551    | 1,048,432,191,730
+Branch misses              | 7,378,834     | 438,867,166       | 5,369,770,642
+Branch miss rate (%)       | 0.64%         | 0.71%             | 0.51%
+L1 dcache loads            | 1,509,485,517 | 100,364,250,850   | 1,615,894,839,457
+L1 dcache load misses      | 4,809,477     | 11,798,079,713    | 201,834,236,637
+L1 miss rate (%)           | 0.32%         | 11.76%            | 12.49%
+LLC loads                  | 413,078       | 1,730,240,247     | 41,109,627,295
+LLC load misses            | 38,424        | 619,867,255       | 18,250,767,069
+LLC miss rate (%)          | 9.30%         | 35.83%            | 44.40%
+Cache references           | 2,851,926     | 6,560,651,285     | 122,125,777,286
+Cache misses               | 1,084,880     | 2,684,572,447     | 74,910,714,511
+Cache miss rate (%)        | 38.04%        | 40.92%            | 61.34%
+dTLB loads                 | 1,646,787,425 | 99,739,379,217    | 1,612,128,333,136
+dTLB load misses           | 259,545       | 45,898,266        | 1,114,270,032
+dTLB miss rate (%)         | 0.016%        | 0.046%            | 0.069%
+Wall time (s)              | 0.74          | 53.3              | 1174.7
+
+----------------------------------------------------------------
+Per-Query Estimates (total / query_count)
+  ZM-Index: ÷100,000   RSMI 100K: ÷100,000   RSMI 1M: ÷1,000,000
+----------------------------------------------------------------
+Metric / query             | ZM-Index (1M) | RSMI (100K)  | RSMI (1M)
+---------------------------|---------------|--------------|----------
+Instructions               | 56,384        | 3,307,425    | 5,587,120
+Cycles                     | 23,390        | 7,197,348    | 21,968,897
+L1 dcache loads            | 15,095        | 1,003,643    | 1,615,895
+L1 dcache load misses      | 48            | 117,981      | 201,834
+LLC load misses            | 0.38          | 6,199        | 18,251
+Cache misses               | 10.8          | 26,846       | 74,911
+Branch misses              | 73.8          | 4,389        | 5,370
+
+----------------------------------------------------------------
+Benchmark Results (latency/throughput from the run itself)
+----------------------------------------------------------------
+Metric                     | ZM-Index (1M) | RSMI (100K)  | RSMI (1M)
+---------------------------|---------------|--------------|----------
+Build Time (s)             | 0.088         | 49.372       | 1170.669
+Index Size (MB)            | 7.657         | 4.273        | 47.265
+Mean Latency (µs)          | 0.2245        | 1.457        | 2.401
+P95 Latency (µs)           | 0.2820        | 2.884        | 4.454
+Throughput (q/s)           | 4,453,781     | 686,437      | 416,525
+Correctness (%)            | 100.00        | 100.00       | 100.00
+Avg Refine/Page Accesses   | 129.93        | 4.903        | 2.868
+
+================================================================
+Key Ratios (RSMI 1M vs ZM-Index 1M — matched data scale)
+================================================================
+IPC                : ZM-Index 2.41  vs RSMI 0.25   → ZM-Index 9.6x more efficient
+L1 miss rate       : ZM-Index 0.32% vs RSMI 12.49% → ZM-Index 39x fewer L1 misses
+LLC miss rate      : ZM-Index 9.30% vs RSMI 44.40% → ZM-Index 4.8x fewer LLC misses
+LLC misses / query : ZM-Index 0.38  vs RSMI 18,251  → ZM-Index 48,000x fewer
+Instructions/query : ZM-Index 56K   vs RSMI 5,587K  → ZM-Index 99x fewer
+Query latency      : ZM-Index 0.22µs vs RSMI 2.40µs → ZM-Index 10.7x faster
+Query throughput   : ZM-Index 4.45M  vs RSMI 0.42M  → ZM-Index 10.7x higher
+
+================================================================
+Notes:
+- perf_event_paranoid = 2 (userspace counters only, :u suffix)
+- All counter groups supported: basic, L1, LLC, cache, dTLB
+- RSMI 1M IPC drops further (0.46→0.25) as larger model doesn't fit in cache
+- ZM-Index epsilon=64 → PGM refine window ≈ 2×64+2 = 130 (observed: 129.93)
+================================================================

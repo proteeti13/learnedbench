@@ -16,25 +16,24 @@ option(PROFILE "whether starting heap profile" OFF)
 option(RSMI "whether building RSMI" OFF)
 
 
-set(BOOST_ROOT "/opt/homebrew/opt/boost")
-set(Boost_INCLUDE_DIR "/opt/homebrew/opt/boost/include")
-set(Boost_LIBRARY_DIR "/opt/homebrew/opt/boost/lib")
-
 SET(EXECUTABLE_OUTPUT_PATH "${CMAKE_BINARY_DIR}/bin")
 
-# check dependencies
-set(TPIE_FOUND TRUE)
-# Use TPIE from your local build - headers AND library from same source for consistency
-set(TPIE_SOURCE_DIR "/Users/proteetiprovarawshan/tpie")
-set(TPIE_BUILD_DIR "/Users/proteetiprovarawshan/tpie/build")
-set(TPIE_LIBRARIES "${TPIE_BUILD_DIR}/tpie/libtpie.a")
-set(TPIE_INCLUDE_DIRS "${TPIE_SOURCE_DIR}" "${TPIE_BUILD_DIR}")
-# Fallback to /usr/local/lib if build folder library doesn't exist
-if(NOT EXISTS ${TPIE_LIBRARIES})
-  set(TPIE_LIBRARIES "/usr/local/lib/libtpie.a")
-  message(STATUS "Using TPIE library from /usr/local/lib (fallback)")
+# TPIE stub directory — provides no-op headers so non-TPIE targets compile cleanly.
+# Must appear first so it shadows any system tpie/ headers.
+set(TPIE_STUB_DIR "${CMAKE_SOURCE_DIR}/tpie_stub")
+
+# Try to locate a real TPIE installation; fall back to stubs if absent.
+find_library(TPIE_LIB NAMES tpie libtpie PATHS /usr/local/lib /usr/lib NO_DEFAULT_PATH)
+if(TPIE_LIB)
+  set(TPIE_LIBRARIES "${TPIE_LIB}")
+  # Prefer system headers when a real library exists
+  find_path(TPIE_INCLUDE tpie/tpie.h PATHS /usr/local/include /usr/include)
+  set(TPIE_INCLUDE_DIRS "${TPIE_INCLUDE}")
+  message(STATUS "TPIE found: ${TPIE_LIB}")
 else()
-  message(STATUS "Using TPIE library from build folder: ${TPIE_LIBRARIES}")
+  set(TPIE_LIBRARIES "")
+  set(TPIE_INCLUDE_DIRS "${TPIE_STUB_DIR}")
+  message(STATUS "TPIE not found — using stub headers (ZM-Index all-dataset target only)")
 endif()
 include_directories(${TPIE_INCLUDE_DIRS})
 #find_package(Boost 1.79.0 REQUIRED COMPONENTS program_options system filesystem)
@@ -231,6 +230,18 @@ else()
         pthread)
     target_compile_options(bench_zmindex_wv PRIVATE -mbmi2)
     target_compile_definitions(bench_zmindex_wv PRIVATE BENCH_DIM=3)
+
+    # ── ZM-Index all-datasets benchmark (no TPIE; reads text files directly) ──
+    add_executable(bench_zmindex_all bench/bench_zmindex_all.cpp)
+    target_include_directories(bench_zmindex_all PRIVATE
+        "${CMAKE_SOURCE_DIR}"
+        "${CMAKE_SOURCE_DIR}/indexes"
+        "${CMAKE_SOURCE_DIR}/utils"
+        "${TPIE_STUB_DIR}"
+        ${Boost_INCLUDE_DIR})
+    target_link_libraries(bench_zmindex_all pthread)
+    target_compile_options(bench_zmindex_all PRIVATE -mbmi2)
+    target_compile_definitions(bench_zmindex_all PRIVATE BENCH_DIM=3)
 
   endif()
 endif()
